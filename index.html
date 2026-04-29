@@ -1,73 +1,123 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bus Tracking System</title>
 
 <style>
-body{
-    margin:0;
-    font-family:sans-serif;
-    background:url('https://images.drivespark.com/img/2024/10/mtc-low-floor-buses-flagged-off-cover-1729060574.jpg') no-repeat center/cover;
-    height:100vh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    color:white;
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: url('https://images.drivespark.com/img/2024/10/mtc-low-floor-buses-flagged-off-cover-1729060574.jpg') no-repeat center center/cover;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-.box{
-    background:rgba(0,0,0,0.7);
-    padding:30px;
-    border-radius:15px;
-    text-align:center;
+/* COMMON BOX */
+.box {
+    background: rgba(0, 0, 0, 0.7);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    color: white;
+    box-shadow: 0px 10px 40px rgba(0,0,0,0.9);
 }
 
-input{
-    padding:10px;
-    margin:10px;
-    width:220px;
-    border:none;
-    border-radius:8px;
+/* INPUT */
+input {
+    padding: 12px;
+    width: 250px;
+    border-radius: 25px;
+    border: none;
+    outline: none;
+    margin: 10px;
 }
 
-button{
-    padding:10px 20px;
-    border:none;
-    border-radius:8px;
-    background:orange;
-    cursor:pointer;
+/* BUTTON */
+button {
+    padding: 12px 25px;
+    border-radius: 25px;
+    border: none;
+    background: #ffcc00;
+    color: black;
+    font-weight: bold;
+    cursor: pointer;
+    margin-top: 15px;
 }
 
-#trackPage, #mapPage{
-    display:none;
+/* LIST */
+.input-box {
+    position: relative;
+}
+
+.list {
+    position: absolute;
+    top: 45px;
+    left: 0;
+    width: 100%;
+    background: white;
+    color: black;
+    border-radius: 10px;
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.list div {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+    cursor: pointer;
+}
+
+.list div:hover {
+    background: #f1f1f1;
+}
+
+/* HIDE SECTIONS */
+#trackPage, #mapPage {
+    display: none;
 }
 </style>
-
 </head>
 
 <body>
 
 <div class="box">
 
-<!-- 🔐 LOGIN PAGE -->
+<!-- 🔐 LOGIN -->
 <div id="loginPage">
     <h2>🚍 Login</h2>
-    <input type="text" id="user" placeholder="Username"><br>
-    <input type="password" id="pass" placeholder="Password"><br>
+    <input type="text" id="username" placeholder="Username"><br>
+    <input type="password" id="password" placeholder="Password"><br>
     <button onclick="login()">Login</button>
-    <p id="err" style="color:red;"></p>
+    <p id="error" style="color:red;"></p>
 </div>
 
-<!-- 🚌 TRACK PAGE -->
+<!-- 🚌 TRACK -->
 <div id="trackPage">
-    <h2>🚌 Track Bus</h2>
-    <input type="text" id="from" placeholder="From"><br>
-    <input type="text" id="to" placeholder="To"><br>
-    <button onclick="track()">Track</button><br><br>
+    <h1>🚌 Real-Time Vehicle Tracking</h1>
+    <p>Find your bus easily</p>
+
+    <div class="input-box">
+        <input type="text" id="from" placeholder="From"
+        onkeyup="suggestFrom(this.value)" onclick="suggestFrom(this.value)">
+        <div id="fromList" class="list"></div>
+    </div>
+
+    <div class="input-box">
+        <input type="text" id="to" placeholder="To"
+        onkeyup="suggestTo(this.value)" onclick="suggestTo(this.value)">
+        <div id="toList" class="list"></div>
+    </div>
+
+    <button onclick="trackBus()">Track Bus</button><br>
     <button onclick="logout()">Logout</button>
 </div>
 
-<!-- 🗺️ MAP PAGE -->
+<!-- 🗺️ MAP -->
 <div id="mapPage">
     <h2>🗺️ Route Details</h2>
     <p id="route"></p>
@@ -78,21 +128,21 @@ button{
 
 <script>
 
-// Page load check
+// AUTO LOGIN CHECK
 if(sessionStorage.getItem("login")=="yes"){
     showTrack();
 }
 
 // LOGIN
-function login(){
-    let u = document.getElementById("user").value;
-    let p = document.getElementById("pass").value;
+function login() {
+    var user = document.getElementById("username").value;
+    var pass = document.getElementById("password").value;
 
-    if(u==="admin" && p==="1234"){
+    if(user === "admin" && pass === "1234") {
         sessionStorage.setItem("login","yes");
         showTrack();
-    }else{
-        document.getElementById("err").innerText="Invalid login";
+    } else {
+        document.getElementById("error").innerText = "Enter valid password";
     }
 }
 
@@ -103,13 +153,13 @@ function showTrack(){
     document.getElementById("mapPage").style.display="none";
 }
 
-// TRACK BUTTON
-function track(){
-    let f = document.getElementById("from").value;
-    let t = document.getElementById("to").value;
+// TRACK BUS
+function trackBus() {
+    let from = document.getElementById("from").value.trim();
+    let to = document.getElementById("to").value.trim();
 
-    if(f=="" || t==""){
-        alert("Enter locations");
+    if(from === "" || to === "") {
+        alert("Please enter both locations");
         return;
     }
 
@@ -117,10 +167,10 @@ function track(){
     document.getElementById("mapPage").style.display="block";
 
     document.getElementById("route").innerText =
-    "From: " + f + " → To: " + t;
+    "From: " + from + " → To: " + to;
 }
 
-// BACK BUTTON
+// BACK
 function back(){
     showTrack();
 }
@@ -130,6 +180,58 @@ function logout(){
     sessionStorage.removeItem("login");
     location.reload();
 }
+
+
+// 📍 PLACES LIST (unchanged)
+const places = [
+"Ariyalur","Chengalpattu","Chennai","Coimbatore","Cuddalore",
+"Dharmapuri","Dindigul","Erode","Kallakurichi","Kancheepuram",
+"Kanniyakumari","Karur","Krishnagiri","Madurai","Mayiladuthurai",
+"Nagapattinam","Namakkal","Perambalur","Pudukkottai",
+"Ramanathapuram","Ranipet","Salem","Sivaganga","Tenkasi",
+"Thanjavur","Theni","The Nilgiris","Thiruvallur","Thiruvarur",
+"Thoothukkudi","Tiruchirappalli","Tirunelveli","Tirupathur",
+"Tiruppur","Tiruvannamalai","Vellore","Viluppuram","Virudhunagar",
+"Mettupalayam","Pollachi","Valparai","Gudalur","Karamadai",
+"Karumathampatti","Madukkarai","Townhall","Selvapuram","Rathinapuri",
+"Tatabad","Sivananda Colony","Gandhipuram","Ukkadam","Ramnagar",
+"R.S Puram","Saibaba Colony","Race Course","Peelamedu",
+"Saravanampatti","Kalapatti","Sulur","Perur","Vadavalli"
+];
+
+places.sort();
+
+function suggestFrom(value){
+    showList(value, "fromList", "from");
+}
+function suggestTo(value){
+    showList(value, "toList", "to");
+}
+
+function showList(value, listId, inputId){
+    let list = value === "" 
+        ? places 
+        : places.filter(p => p.toLowerCase().includes(value.toLowerCase()));
+
+    let html = "";
+    list.forEach(p=>{
+        html += `<div onclick="selectPlace('${p}','${inputId}','${listId}')">${p}</div>`;
+    });
+
+    document.getElementById(listId).innerHTML = html;
+}
+
+function selectPlace(val, inputId, listId){
+    document.getElementById(inputId).value = val;
+    document.getElementById(listId).innerHTML = "";
+}
+
+document.addEventListener("click", function(e) {
+    if (!e.target.closest(".input-box")) {
+        document.getElementById("fromList").innerHTML = "";
+        document.getElementById("toList").innerHTML = "";
+    }
+});
 
 </script>
 
