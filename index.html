@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Bus Tracking System</title>
+
+<style>
+body{
+    margin:0;
+    font-family:sans-serif;
+    background:url('https://images.drivespark.com/img/2024/10/mtc-low-floor-buses-flagged-off-cover-1729060574.jpg') no-repeat center/cover;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:white;
+}
+
+.box{
+    background:rgba(0,0,0,0.7);
+    padding:30px;
+    border-radius:15px;
+    text-align:center;
+}
+
+input{
+    padding:10px;
+    margin:10px;
+    width:220px;
+    border:none;
+    border-radius:8px;
+}
+
+button{
+    padding:10px 20px;
+    border:none;
+    border-radius:8px;
+    background:orange;
+    cursor:pointer;
+}
+
+#trackPage, #mapPage{
+    display:none;
+}
+</style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+<!-- 🔐 LOGIN PAGE -->
+<div id="loginPage">
+    <h2>🚍 Login</h2>
+    <input type="text" id="user" placeholder="Username"><br>
+    <input type="password" id="pass" placeholder="Password"><br>
+    <button onclick="login()">Login</button>
+    <p id="err" style="color:red;"></p>
+</div>
+
+<!-- 🚌 TRACK PAGE -->
+<div id="trackPage">
+    <h2>🚌 Track Bus</h2>
+    <input type="text" id="from" placeholder="From"><br>
+    <input type="text" id="to" placeholder="To"><br>
+    <button onclick="track()">Track</button><br><br>
+    <button onclick="logout()">Logout</button>
+</div>
+
+<!-- 🗺️ MAP PAGE -->
+<div id="mapPage">
+    <h2>🗺️ Route Details</h2>
+    <p id="route"></p>
+    <button onclick="back()">⬅ Back</button>
+</div>
+
+</div>
+
+<script>
+
+// Page load check
+if(sessionStorage.getItem("login")=="yes"){
+    showTrack();
+}
+
+// LOGIN
+function login(){
+    let u = document.getElementById("user").value;
+    let p = document.getElementById("pass").value;
+
+    if(u==="admin" && p==="1234"){
+        sessionStorage.setItem("login","yes");
+        showTrack();
+    }else{
+        document.getElementById("err").innerText="Invalid login";
+    }
+}
+
+// SHOW TRACK PAGE
+function showTrack(){
+    document.getElementById("loginPage").style.display="none";
+    document.getElementById("trackPage").style.display="block";
+    document.getElementById("mapPage").style.display="none";
+}
+
+// TRACK BUTTON
+function track(){
+    let f = document.getElementById("from").value;
+    let t = document.getElementById("to").value;
+
+    if(f=="" || t==""){
+        alert("Enter locations");
+        return;
+    }
+
+    document.getElementById("trackPage").style.display="none";
+    document.getElementById("mapPage").style.display="block";
+
+    document.getElementById("route").innerText =
+    "From: " + f + " → To: " + t;
+}
+
+// BACK BUTTON
+function back(){
+    showTrack();
+}
+
+// LOGOUT
+function logout(){
+    sessionStorage.removeItem("login");
+    location.reload();
+}
+
+</script>
+
+</body>
+</html>
