@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bus Tracking System</title>
+    <title>Live Bus Tracking System</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
@@ -18,31 +21,28 @@
             overflow: hidden;
         }
 
-        /* Container for Glass Effect */
-        .container {
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(10px);
+        /* Container styling */
+        .glass-box {
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(12px);
             padding: 40px;
             border-radius: 20px;
             text-align: center;
             color: white;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-            width: 350px;
-            transition: all 0.5s ease-in-out;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            width: 320px;
+            z-index: 10;
         }
 
-        /* Typography */
-        h2, h1 { margin-bottom: 10px; }
-        p { margin-bottom: 20px; font-weight: 300; }
-
-        /* Form Elements */
+        h1, h2 { margin-bottom: 10px; }
+        
         .input-box { position: relative; margin: 15px 0; }
         
         input {
             width: 100%;
             padding: 12px;
             box-sizing: border-box;
-            border-radius: 8px;
+            border-radius: 25px;
             border: none;
             outline: none;
             font-size: 14px;
@@ -51,18 +51,17 @@
         button {
             width: 100%;
             padding: 12px;
-            background: #ff6600;
+            background: #ffcc00;
             border: none;
-            border-radius: 8px;
-            color: white;
+            border-radius: 25px;
+            color: black;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             transition: 0.3s;
-            margin-top: 10px;
         }
 
-        button:hover { background: #e65c00; }
+        button:hover { background: #e6b800; }
 
         /* Dropdown Suggestion List */
         .list {
@@ -72,59 +71,75 @@
             width: 100%;
             background: white;
             color: black;
-            border-radius: 8px;
+            border-radius: 10px;
             max-height: 150px;
             overflow-y: auto;
             z-index: 1000;
             text-align: left;
         }
 
-        .list div {
-            padding: 10px;
-            border-bottom: 1px solid #ddd;
-            cursor: pointer;
-        }
-
+        .list div { padding: 10px; border-bottom: 1px solid #ddd; cursor: pointer; }
         .list div:hover { background: #f1f1f1; }
 
-        #error { color: #ffcc00; margin-top: 10px; font-size: 14px; }
+        /* Map UI */
+        #map-screen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: white;
+            z-index: 20;
+        }
 
-        /* Toggle Sections */
-        #tracking-section { display: none; width: 400px; }
+        #map { width: 100%; height: 100%; }
+
+        .back-btn {
+            position: absolute;
+            top: 20px; left: 20px;
+            z-index: 1001;
+            width: auto;
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.8);
+            color: white;
+        }
+
+        #error { color: #ffcc00; font-size: 13px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
-    <div id="login-section" class="container">
+    <div id="login-section" class="glass-box">
         <h2>🚍 Bus Login</h2>
-        <p>Access your dashboard</p>
         <div class="input-box">
-            <input type="text" id="username" placeholder="Username (admin)" required>
+            <input type="text" id="username" placeholder="Username (admin)">
         </div>
         <div class="input-box">
-            <input type="password" id="password" placeholder="Password (1234)" required>
+            <input type="password" id="password" placeholder="Password (1234)">
         </div>
         <button onclick="handleLogin()">Login</button>
         <p id="error"></p>
     </div>
 
-    <div id="tracking-section" class="container">
-        <h1>🚌 Real-Time Tracking</h1>
-        <p>Find your bus route easily</p>
-
+    <div id="search-section" class="glass-box" style="display:none;">
+        <h1>🚌 Track Bus</h1>
+        <p>Enter your route</p>
         <div class="input-box">
-            <input type="text" id="from" placeholder="From" onkeyup="suggest('from')" onclick="suggest('from')" autocomplete="off">
+            <input type="text" id="from" placeholder="From" onkeyup="suggest('from')" autocomplete="off">
             <div id="fromList" class="list"></div>
         </div>
-
         <div class="input-box">
-            <input type="text" id="to" placeholder="To" onkeyup="suggest('to')" onclick="suggest('to')" autocomplete="off">
+            <input type="text" id="to" placeholder="To" onkeyup="suggest('to')" autocomplete="off">
             <div id="toList" class="list"></div>
         </div>
-
-        <button onclick="trackBus()">Track Bus</button>
-        <button onclick="logout()" style="background:transparent; border:1px solid white; margin-top:20px; font-size:12px;">Logout</button>
+        <button onclick="showMap()">Track Bus</button>
     </div>
+
+    <div id="map-screen">
+        <button class="back-btn" onclick="closeMap()">⬅ Back to Search</button>
+        <div id="map"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
         const places = [
@@ -132,58 +147,72 @@
             "Kanniyakumari","Karur","Krishnagiri","Madurai","Mayiladuthurai","Nagapattinam","Namakkal","Perambalur","Pudukkottai",
             "Ramanathapuram","Ranipet","Salem","Sivaganga","Tenkasi","Thanjavur","Theni","The Nilgiris","Thiruvallur","Thiruvarur",
             "Thoothukkudi","Tiruchirappalli","Tirunelveli","Tirupathur","Tiruppur","Tiruvannamalai","Vellore","Viluppuram","Virudhunagar",
-            "Gandhipuram","Ukkadam","R.S Puram","Peelamedu","Singanallur","Saravanampatti","Vadavalli","Thudiyalur"
+            "Gandhipuram","Ukkadam","R.S Puram","Peelamedu","Singanallur","Saravanampatti","Vadavalli"
         ].sort();
 
-        // Authentication Logic
-        function handleLogin() {
-            const user = document.getElementById("username").value;
-            const pass = document.getElementById("password").value;
+        let mapInstance = null;
 
-            if(user === "admin" && pass === "1234") {
+        // --- Auth Logic ---
+        function handleLogin() {
+            const u = document.getElementById("username").value;
+            const p = document.getElementById("password").value;
+            if(u === "admin" && p === "1234") {
                 document.getElementById("login-section").style.display = "none";
-                document.getElementById("tracking-section").style.display = "block";
+                document.getElementById("search-section").style.display = "block";
             } else {
-                document.getElementById("error").innerText = "Invalid credentials. Try admin/1234";
+                document.getElementById("error").innerText = "Invalid Login!";
             }
         }
 
-        function logout() {
-            location.reload(); // Simple way to reset state
-        }
-
-        // Tracking Logic
-        function suggest(type) {
-            const input = document.getElementById(type);
-            const listId = type + "List";
-            const value = input.value.toLowerCase();
-            
-            let filtered = value === "" ? places : places.filter(p => p.toLowerCase().includes(value));
+        // --- Search/Suggestions Logic ---
+        function suggest(inputId) {
+            let val = document.getElementById(inputId).value.toLowerCase();
+            let listId = inputId + "List";
+            let filtered = val === "" ? [] : places.filter(p => p.toLowerCase().includes(val));
             
             let html = "";
             filtered.forEach(p => {
-                html += `<div onclick="selectPlace('${p}','${type}')">${p}</div>`;
+                html += `<div onclick="selectPlace('${p}','${inputId}')">${p}</div>`;
             });
             document.getElementById(listId).innerHTML = html;
         }
 
-        function selectPlace(val, type) {
-            document.getElementById(type).value = val;
-            document.getElementById(type + "List").innerHTML = "";
+        function selectPlace(val, inputId) {
+            document.getElementById(inputId).value = val;
+            document.getElementById(inputId + "List").innerHTML = "";
         }
 
-        function trackBus() {
-            let from = document.getElementById("from").value;
-            let to = document.getElementById("to").value;
-            if(from && to) {
-                alert("Redirecting to map for: " + from + " to " + to);
-                // window.location.href = "map1.html?from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
-            } else {
+        // --- Live Map Logic ---
+        function showMap() {
+            const from = document.getElementById("from").value;
+            const to = document.getElementById("to").value;
+
+            if(!from || !to) {
                 alert("Please select both locations");
+                return;
             }
+
+            document.getElementById("map-screen").style.display = "block";
+
+            // Initialize Leaflet Map
+            if (!mapInstance) {
+                mapInstance = L.map('map').setView([11.0168, 76.9558], 12); // Default to Coimbatore
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(mapInstance);
+            }
+
+            // Add a Marker for the "Bus"
+            L.marker([11.0168, 76.9558]).addTo(mapInstance)
+                .bindPopup(`<b>Bus 24C</b><br>Traveling from ${from} to ${to}`)
+                .openPopup();
         }
 
-        // Close dropdowns on outside click
+        function closeMap() {
+            document.getElementById("map-screen").style.display = "none";
+        }
+
+        // Hide dropdowns when clicking away
         document.addEventListener("click", function(e) {
             if (!e.target.closest(".input-box")) {
                 document.getElementById("fromList").innerHTML = "";
