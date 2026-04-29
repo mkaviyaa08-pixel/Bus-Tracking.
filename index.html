@@ -3,23 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Integrated Bus Tracking System</title>
+    <title>Advanced Bus Tracking</title>
     
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.css" />
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
-        body {
-            margin: 0;
+        body, html {
+            margin: 0; padding: 0;
             font-family: 'Poppins', sans-serif;
-            /* நீங்கள் கேட்ட டிஜிட்டல் மேப்பிங் பின்னணி */
-            background: url('https://media.istockphoto.com/id/1271103381/vector/digital-mapping-and-pathfinding-abstract-concept.jpg?s=612x612&w=0&k=20&c=w6B_l6T-3OqTqA7L8C5C8T9A5K2U5P9M5I8K8O6E4W0=') no-repeat center center/cover;
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
+            transition: background 0.5s ease-in-out;
+        }
+
+        /* Login Background */
+        .bg-login {
+            background: url('https://media.istockphoto.com/id/1271103381/vector/digital-mapping-and-pathfinding-abstract-concept.jpg?s=612x612&w=0&k=20&c=w6B_l6T-3OqTqA7L8C5C8T9A5K2U5P9M5I8K8O6E4W0=') no-repeat center center/cover;
+        }
+
+        /* Tracking Page Background */
+        .bg-track {
+            background: url('https://images.drivespark.com/img/2024/10/mtc-low-floor-buses-flagged-off-cover-1729060574.jpg') no-repeat center center/cover;
         }
 
         .glass-box {
@@ -32,143 +42,86 @@
             box-shadow: 0 15px 35px rgba(0,0,0,0.6);
             width: 350px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
         }
 
-        h2, h1 { margin-bottom: 20px; font-weight: 600; }
-
-        .input-box { position: relative; margin-bottom: 15px; }
-
         input {
-            width: 100%;
-            padding: 12px 20px;
-            box-sizing: border-box;
-            border-radius: 30px;
-            border: none;
-            outline: none;
-            background: rgba(255, 255, 255, 0.95);
-            color: #333;
-            font-size: 15px;
+            width: 100%; padding: 12px 20px; box-sizing: border-box;
+            border-radius: 30px; border: none; outline: none;
+            background: rgba(255, 255, 255, 0.95); margin-bottom: 15px;
         }
 
         button {
-            width: 100%;
-            padding: 12px;
-            background: #ffcc00;
-            border: none;
-            border-radius: 30px;
-            color: #000;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.4s;
+            width: 100%; padding: 12px; background: #ffcc00;
+            border: none; border-radius: 30px; font-weight: bold; cursor: pointer;
         }
 
-        button:hover {
-            background: #e6b800;
-            transform: scale(1.02);
-        }
-
-        /* Suggestion List Style */
         .list {
-            position: absolute;
-            top: 50px;
-            left: 0;
-            width: 100%;
-            background: white;
-            color: black;
-            border-radius: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            text-align: left;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            position: absolute; width: 100%; background: white;
+            color: black; border-radius: 10px; max-height: 150px;
+            overflow-y: auto; z-index: 1000; text-align: left;
         }
+        .list div { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; }
 
-        .list div { padding: 10px 20px; border-bottom: 1px solid #eee; cursor: pointer; }
-        .list div:hover { background: #f0f0f0; }
-
-        /* Full Screen Map */
+        /* Map UI */
         #map-screen {
-            display: none;
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            z-index: 9999;
+            display: none; position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%; z-index: 9999;
         }
-
         #map { width: 100%; height: 100%; }
-
         .back-btn {
-            position: absolute;
-            top: 20px; left: 20px;
-            z-index: 10000;
-            padding: 10px 20px;
-            background: #000;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
+            position: absolute; top: 20px; left: 20px; z-index: 10000;
+            padding: 10px 20px; background: #000; color: #fff; cursor: pointer;
         }
-
-        #error-msg { color: #ffeb3b; font-size: 14px; margin-top: 10px; display: none; }
     </style>
 </head>
-<body>
+<body class="bg-login">
 
     <div id="login-page" class="glass-box">
         <h2>🚍 Admin Login</h2>
-        <div class="input-box">
-            <input type="text" id="user" placeholder="Username">
-        </div>
-        <div class="input-box">
-            <input type="password" id="pass" placeholder="Password">
-        </div>
+        <input type="text" id="user" placeholder="Username (admin)">
+        <input type="password" id="pass" placeholder="Password (1234)">
         <button onclick="doLogin()">Login</button>
-        <p id="error-msg">Invalid Credentials!</p>
     </div>
 
     <div id="search-page" class="glass-box" style="display:none;">
-        <h1>🚌 Track Bus</h1>
-        <div class="input-box">
-            <input type="text" id="from" placeholder="From Location" onkeyup="searchPlace('from')" onclick="searchPlace('from')" autocomplete="off">
+        <h1>📍 Track Bus</h1>
+        <div style="position:relative;">
+            <input type="text" id="from" placeholder="From (District/Place)" onkeyup="searchPlace('from')" autocomplete="off">
             <div id="fromList" class="list"></div>
         </div>
-        <div class="input-box">
-            <input type="text" id="to" placeholder="To Location" onkeyup="searchPlace('to')" onclick="searchPlace('to')" autocomplete="off">
+        <div style="position:relative;">
+            <input type="text" id="to" placeholder="To (District/Place)" onkeyup="searchPlace('to')" autocomplete="off">
             <div id="toList" class="list"></div>
         </div>
-        <button onclick="openMap()">Track Now</button>
+        <button onclick="openMap()">View Route</button>
     </div>
 
     <div id="map-screen">
-        <button class="back-btn" onclick="closeMap()">⬅ Back to Search</button>
+        <button class="back-btn" onclick="closeMap()">⬅ Back</button>
         <div id="map"></div>
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine/dist/leaflet-routing-machine.js"></script>
 
     <script>
-        // உங்கள் விரிவான இடங்களின் பட்டியல்
-        const places = [
-            "Ariyalur","Chengalpattu","Chennai","Coimbatore","Cuddalore","Dharmapuri","Dindigul","Erode","Kallakurichi","Kancheepuram",
-            "Kanniyakumari","Karur","Krishnagiri","Madurai","Mayiladuthurai","Nagapattinam","Namakkal","Perambalur","Pudukkottai",
-            "Ramanathapuram","Ranipet","Salem","Sivaganga","Tenkasi","Thanjavur","Theni","The Nilgiris","Thiruvallur","Thiruvarur",
-            "Thoothukkudi","Tiruchirappalli","Tirunelveli","Tirupathur","Tiruppur","Tiruvannamalai","Vellore","Viluppuram","Virudhunagar",
-            "Mettupalayam","Pollachi","Valparai","Gudalur","Karamadai","Karumathampatti","Madukkarai","Townhall","Selvapuram","Rathinapuri",
-            "Tatabad","Sivananda Colony","Gandhipuram","Ukkadam","Kottaimedu","Ramnagar","Sukrawarpettai","R.S Puram","Saibaba Colony",
-            "Venkatapuram","Ponnairajapuram","Race Course","Gopalapuram","Sidhapudur","Avarampalayam","Sundakkamuthur","Podanur",
-            "Karumbukadai","Sundarapuram","Kurichi","Eachanari","Chettipalayam","Vellalore","Kuniyamuthur","Sugunapuram","Kovaipudur",
-            "Sokkampudhur","Thondamuthur","Madhampatti","Kuppanur","Ramnathapuram","Singanallur","Puliakulam","Ondipudur","Varadarajapuram",
-            "Peelamedu","Meena Estate","Udayampalayam","Nanjundapuram","Nehru Nagar","Vilankurichi","Ganapathy","Cheranmanagar",
-            "Nallampalayam","Gandhimanagar","Chinniampalayam","Sowripalayam","G.V Residency","Uppilipalayam","Perur","Vadavalli",
-            "Veerakeralam","Veedapatti","P.N.Pudur","Kalveerampalayam","Periyanaickenpalayam","Poochiyur","Ravathakollanur","Thadagam",
-            "Maruthamalai","Pannimadai","Saravanampatti","Kalapatti","Keeranatham","Pachapalayam","Annur","Ganesapuram","Kariampalayam",
-            "Kovilpalayam","Kurumbapalayam","Walayar","K.G Chavadi","Ettimadai","Odaiyakulam","Thirumalayampalayam","Neelambur","Somanur",
-            "Irugur","Sulur","Pooluvapatti","Karunya Nagar","Thenkarai","Narasipuram","Puthur","Alanthurai","Kinathukadavu","Myleripalayam",
-            "Nachipalayam","Malumichampatti","Othakalmandapam","Samathur","Suleeswaranpatti","Annamalai Hills"
-        ].sort();
+        // இடங்களின் பட்டியல் (Coordinates உடன் - Map-ல் ரூட் காட்ட இது அவசியம்)
+        const locations = {
+            "Chennai": [13.0827, 80.2707],
+            "Coimbatore": [11.0168, 76.9558],
+            "Madurai": [9.9252, 78.1198],
+            "Salem": [11.6643, 78.1460],
+            "Trichy": [10.7905, 78.7047],
+            "Erode": [11.3410, 77.7172],
+            "Vellore": [12.9165, 79.1325],
+            "Thanjavur": [10.7870, 79.1378],
+            "Pollachi": [10.6620, 77.0065]
+        };
+        const places = Object.keys(locations);
 
         let myMap = null;
+        let routingControl = null;
 
         function doLogin() {
             let u = document.getElementById("user").value;
@@ -176,22 +129,20 @@
             if(u === "admin" && p === "1234") {
                 document.getElementById("login-page").style.display = "none";
                 document.getElementById("search-page").style.display = "block";
-            } else {
-                document.getElementById("error-msg").style.display = "block";
-            }
+                document.body.className = "bg-track"; // Background மாறுகிறது
+            } else { alert("Invalid Login!"); }
         }
 
         function searchPlace(id) {
             let val = document.getElementById(id).value.toLowerCase();
-            let listDiv = document.getElementById(id + "List");
-            
-            let matches = val === "" ? places : places.filter(p => p.toLowerCase().includes(val));
-            
+            let matches = places.filter(p => p.toLowerCase().includes(val));
             let html = "";
-            matches.slice(0, 10).forEach(m => { // முதல் 10 முடிவுகளை மட்டும் காட்டும்
-                html += `<div onclick="setVal('${id}', '${m}')">${m}</div>`;
-            });
-            listDiv.innerHTML = html;
+            if(val !== "") {
+                matches.forEach(m => {
+                    html += `<div onclick="setVal('${id}', '${m}')">${m}</div>`;
+                });
+            }
+            document.getElementById(id + "List").innerHTML = html;
         }
 
         function setVal(id, val) {
@@ -202,31 +153,32 @@
         function openMap() {
             let f = document.getElementById("from").value;
             let t = document.getElementById("to").value;
-            if(!f || !t) { alert("Please select locations"); return; }
+            if(!locations[f] || !locations[t]) { alert("Please select places from list!"); return; }
 
             document.getElementById("map-screen").style.display = "block";
-            
+
             if (!myMap) {
-                // கோவை மையப்பகுதியை Default ஆகக் காட்டும்
-                myMap = L.map('map').setView([11.0168, 76.9558], 13);
+                myMap = L.map('map').setView([11.0168, 76.9558], 7);
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(myMap);
             }
-            
-            L.marker([11.0168, 76.9558]).addTo(myMap)
-                .bindPopup(`<b>Bus Tracking</b><br>${f} ➡ ${t}`)
-                .openPopup();
+
+            // பழைய ரூட் இருந்தால் நீக்கவும்
+            if (routingControl) { myMap.removeControl(routingControl); }
+
+            // Google Maps போல ரூட் போடும் வசதி
+            routingControl = L.Routing.control({
+                waypoints: [
+                    L.latLng(locations[f][0], locations[f][1]),
+                    L.latLng(locations[t][0], locations[t][1])
+                ],
+                routeWhileDragging: true,
+                lineOptions: { styles: [{ color: 'blue', weight: 6 }] }
+            }).addTo(myMap);
         }
 
         function closeMap() {
             document.getElementById("map-screen").style.display = "none";
         }
-
-        document.addEventListener("click", function(e) {
-            if (!e.target.closest(".input-box")) {
-                document.getElementById("fromList").innerHTML = "";
-                document.getElementById("toList").innerHTML = "";
-            }
-        });
     </script>
 </body>
 </html>
