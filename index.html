@@ -1,239 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bus Tracking System</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bus Tracking System</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
-<style>
-body {
-    margin: 0;
-    font-family: Arial, sans-serif;
-    background: url('https://images.drivespark.com/img/2024/10/mtc-low-floor-buses-flagged-off-cover-1729060574.jpg') no-repeat center center/cover;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: url('https://images.drivespark.com/img/2024/10/mtc-low-floor-buses-flagged-off-cover-1729060574.jpg') no-repeat center center/cover;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
 
-/* COMMON BOX */
-.box {
-    background: rgba(0, 0, 0, 0.7);
-    padding: 40px;
-    border-radius: 20px;
-    text-align: center;
-    color: white;
-    box-shadow: 0px 10px 40px rgba(0,0,0,0.9);
-}
+        /* Container for Glass Effect */
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            width: 350px;
+            transition: all 0.5s ease-in-out;
+        }
 
-/* INPUT */
-input {
-    padding: 12px;
-    width: 250px;
-    border-radius: 25px;
-    border: none;
-    outline: none;
-    margin: 10px;
-}
+        /* Typography */
+        h2, h1 { margin-bottom: 10px; }
+        p { margin-bottom: 20px; font-weight: 300; }
 
-/* BUTTON */
-button {
-    padding: 12px 25px;
-    border-radius: 25px;
-    border: none;
-    background: #ffcc00;
-    color: black;
-    font-weight: bold;
-    cursor: pointer;
-    margin-top: 15px;
-}
+        /* Form Elements */
+        .input-box { position: relative; margin: 15px 0; }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border-radius: 8px;
+            border: none;
+            outline: none;
+            font-size: 14px;
+        }
 
-/* LIST */
-.input-box {
-    position: relative;
-}
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #ff6600;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            margin-top: 10px;
+        }
 
-.list {
-    position: absolute;
-    top: 45px;
-    left: 0;
-    width: 100%;
-    background: white;
-    color: black;
-    border-radius: 10px;
-    max-height: 150px;
-    overflow-y: auto;
-    z-index: 1000;
-}
+        button:hover { background: #e65c00; }
 
-.list div {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
-    cursor: pointer;
-}
+        /* Dropdown Suggestion List */
+        .list {
+            position: absolute;
+            top: 45px;
+            left: 0;
+            width: 100%;
+            background: white;
+            color: black;
+            border-radius: 8px;
+            max-height: 150px;
+            overflow-y: auto;
+            z-index: 1000;
+            text-align: left;
+        }
 
-.list div:hover {
-    background: #f1f1f1;
-}
+        .list div {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            cursor: pointer;
+        }
 
-/* HIDE SECTIONS */
-#trackPage, #mapPage {
-    display: none;
-}
-</style>
+        .list div:hover { background: #f1f1f1; }
+
+        #error { color: #ffcc00; margin-top: 10px; font-size: 14px; }
+
+        /* Toggle Sections */
+        #tracking-section { display: none; width: 400px; }
+    </style>
 </head>
-
 <body>
 
-<div class="box">
-
-<!-- 🔐 LOGIN -->
-<div id="loginPage">
-    <h2>🚍 Login</h2>
-    <input type="text" id="username" placeholder="Username"><br>
-    <input type="password" id="password" placeholder="Password"><br>
-    <button onclick="login()">Login</button>
-    <p id="error" style="color:red;"></p>
-</div>
-
-<!-- 🚌 TRACK -->
-<div id="trackPage">
-    <h1>🚌 Real-Time Vehicle Tracking</h1>
-    <p>Find your bus easily</p>
-
-    <div class="input-box">
-        <input type="text" id="from" placeholder="From"
-        onkeyup="suggestFrom(this.value)" onclick="suggestFrom(this.value)">
-        <div id="fromList" class="list"></div>
+    <div id="login-section" class="container">
+        <h2>🚍 Bus Login</h2>
+        <p>Access your dashboard</p>
+        <div class="input-box">
+            <input type="text" id="username" placeholder="Username (admin)" required>
+        </div>
+        <div class="input-box">
+            <input type="password" id="password" placeholder="Password (1234)" required>
+        </div>
+        <button onclick="handleLogin()">Login</button>
+        <p id="error"></p>
     </div>
 
-    <div class="input-box">
-        <input type="text" id="to" placeholder="To"
-        onkeyup="suggestTo(this.value)" onclick="suggestTo(this.value)">
-        <div id="toList" class="list"></div>
+    <div id="tracking-section" class="container">
+        <h1>🚌 Real-Time Tracking</h1>
+        <p>Find your bus route easily</p>
+
+        <div class="input-box">
+            <input type="text" id="from" placeholder="From" onkeyup="suggest('from')" onclick="suggest('from')" autocomplete="off">
+            <div id="fromList" class="list"></div>
+        </div>
+
+        <div class="input-box">
+            <input type="text" id="to" placeholder="To" onkeyup="suggest('to')" onclick="suggest('to')" autocomplete="off">
+            <div id="toList" class="list"></div>
+        </div>
+
+        <button onclick="trackBus()">Track Bus</button>
+        <button onclick="logout()" style="background:transparent; border:1px solid white; margin-top:20px; font-size:12px;">Logout</button>
     </div>
 
-    <button onclick="trackBus()">Track Bus</button><br>
-    <button onclick="logout()">Logout</button>
-</div>
+    <script>
+        const places = [
+            "Ariyalur","Chengalpattu","Chennai","Coimbatore","Cuddalore","Dharmapuri","Dindigul","Erode","Kallakurichi","Kancheepuram",
+            "Kanniyakumari","Karur","Krishnagiri","Madurai","Mayiladuthurai","Nagapattinam","Namakkal","Perambalur","Pudukkottai",
+            "Ramanathapuram","Ranipet","Salem","Sivaganga","Tenkasi","Thanjavur","Theni","The Nilgiris","Thiruvallur","Thiruvarur",
+            "Thoothukkudi","Tiruchirappalli","Tirunelveli","Tirupathur","Tiruppur","Tiruvannamalai","Vellore","Viluppuram","Virudhunagar",
+            "Gandhipuram","Ukkadam","R.S Puram","Peelamedu","Singanallur","Saravanampatti","Vadavalli","Thudiyalur"
+        ].sort();
 
-<!-- 🗺️ MAP -->
-<div id="mapPage">
-    <h2>🗺️ Route Details</h2>
-    <p id="route"></p>
-    <button onclick="back()">⬅ Back</button>
-</div>
+        // Authentication Logic
+        function handleLogin() {
+            const user = document.getElementById("username").value;
+            const pass = document.getElementById("password").value;
 
-</div>
+            if(user === "admin" && pass === "1234") {
+                document.getElementById("login-section").style.display = "none";
+                document.getElementById("tracking-section").style.display = "block";
+            } else {
+                document.getElementById("error").innerText = "Invalid credentials. Try admin/1234";
+            }
+        }
 
-<script>
+        function logout() {
+            location.reload(); // Simple way to reset state
+        }
 
-// AUTO LOGIN CHECK
-if(sessionStorage.getItem("login")=="yes"){
-    showTrack();
-}
+        // Tracking Logic
+        function suggest(type) {
+            const input = document.getElementById(type);
+            const listId = type + "List";
+            const value = input.value.toLowerCase();
+            
+            let filtered = value === "" ? places : places.filter(p => p.toLowerCase().includes(value));
+            
+            let html = "";
+            filtered.forEach(p => {
+                html += `<div onclick="selectPlace('${p}','${type}')">${p}</div>`;
+            });
+            document.getElementById(listId).innerHTML = html;
+        }
 
-// LOGIN
-function login() {
-    var user = document.getElementById("username").value;
-    var pass = document.getElementById("password").value;
+        function selectPlace(val, type) {
+            document.getElementById(type).value = val;
+            document.getElementById(type + "List").innerHTML = "";
+        }
 
-    if(user === "admin" && pass === "1234") {
-        sessionStorage.setItem("login","yes");
-        showTrack();
-    } else {
-        document.getElementById("error").innerText = "Enter valid password";
-    }
-}
+        function trackBus() {
+            let from = document.getElementById("from").value;
+            let to = document.getElementById("to").value;
+            if(from && to) {
+                alert("Redirecting to map for: " + from + " to " + to);
+                // window.location.href = "map1.html?from=" + encodeURIComponent(from) + "&to=" + encodeURIComponent(to);
+            } else {
+                alert("Please select both locations");
+            }
+        }
 
-// SHOW TRACK PAGE
-function showTrack(){
-    document.getElementById("loginPage").style.display="none";
-    document.getElementById("trackPage").style.display="block";
-    document.getElementById("mapPage").style.display="none";
-}
-
-// TRACK BUS
-function trackBus() {
-    let from = document.getElementById("from").value.trim();
-    let to = document.getElementById("to").value.trim();
-
-    if(from === "" || to === "") {
-        alert("Please enter both locations");
-        return;
-    }
-
-    document.getElementById("trackPage").style.display="none";
-    document.getElementById("mapPage").style.display="block";
-
-    document.getElementById("route").innerText =
-    "From: " + from + " → To: " + to;
-}
-
-// BACK
-function back(){
-    showTrack();
-}
-
-// LOGOUT
-function logout(){
-    sessionStorage.removeItem("login");
-    location.reload();
-}
-
-
-// 📍 PLACES LIST (unchanged)
-const places = [
-"Ariyalur","Chengalpattu","Chennai","Coimbatore","Cuddalore",
-"Dharmapuri","Dindigul","Erode","Kallakurichi","Kancheepuram",
-"Kanniyakumari","Karur","Krishnagiri","Madurai","Mayiladuthurai",
-"Nagapattinam","Namakkal","Perambalur","Pudukkottai",
-"Ramanathapuram","Ranipet","Salem","Sivaganga","Tenkasi",
-"Thanjavur","Theni","The Nilgiris","Thiruvallur","Thiruvarur",
-"Thoothukkudi","Tiruchirappalli","Tirunelveli","Tirupathur",
-"Tiruppur","Tiruvannamalai","Vellore","Viluppuram","Virudhunagar",
-"Mettupalayam","Pollachi","Valparai","Gudalur","Karamadai",
-"Karumathampatti","Madukkarai","Townhall","Selvapuram","Rathinapuri",
-"Tatabad","Sivananda Colony","Gandhipuram","Ukkadam","Ramnagar",
-"R.S Puram","Saibaba Colony","Race Course","Peelamedu",
-"Saravanampatti","Kalapatti","Sulur","Perur","Vadavalli"
-];
-
-places.sort();
-
-function suggestFrom(value){
-    showList(value, "fromList", "from");
-}
-function suggestTo(value){
-    showList(value, "toList", "to");
-}
-
-function showList(value, listId, inputId){
-    let list = value === "" 
-        ? places 
-        : places.filter(p => p.toLowerCase().includes(value.toLowerCase()));
-
-    let html = "";
-    list.forEach(p=>{
-        html += `<div onclick="selectPlace('${p}','${inputId}','${listId}')">${p}</div>`;
-    });
-
-    document.getElementById(listId).innerHTML = html;
-}
-
-function selectPlace(val, inputId, listId){
-    document.getElementById(inputId).value = val;
-    document.getElementById(listId).innerHTML = "";
-}
-
-document.addEventListener("click", function(e) {
-    if (!e.target.closest(".input-box")) {
-        document.getElementById("fromList").innerHTML = "";
-        document.getElementById("toList").innerHTML = "";
-    }
-});
-
-</script>
-
+        // Close dropdowns on outside click
+        document.addEventListener("click", function(e) {
+            if (!e.target.closest(".input-box")) {
+                document.getElementById("fromList").innerHTML = "";
+                document.getElementById("toList").innerHTML = "";
+            }
+        });
+    </script>
 </body>
 </html>
